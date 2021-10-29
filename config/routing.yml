@@ -1,0 +1,7 @@
+snailpaste_phpbbexternalintegration_users_register:
+    path: /api/users/register
+    defaults: { _controller: snailpaste.phpbbexternalintegration.controller.users:register }
+
+snailpaste_phpbbexternalintegration_users_login:
+    path: /api/users/login
+    defaults: { _controller: snailpaste.phpbbexternalintegration.controller.users:login }

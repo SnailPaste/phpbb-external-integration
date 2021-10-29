@@ -1,0 +1,2 @@
+parameters:
+    snailpaste.phpbbexternalintegration.tables.api_keys: '%core.table_prefix%phpbbexternalintegration_api_keys'

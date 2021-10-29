@@ -1,0 +1,63 @@
+imports:
+    - { resource: tables.yml }
+
+services:
+    snailpaste.phpbbexternalintegration.controller.users:
+        class: snailpaste\phpbbexternalintegration\controller\users_controller
+        arguments:
+            - '@config'
+            - '@controller.helper'
+            - '@service_container'
+            - '@auth.provider.db'
+            - '@template'
+            - '@language'
+            - '@dbal.conn'
+            - '@snailpaste.phpbbexternalintegration.operator'
+            - '@request'
+            - '@user'
+            - '%core.root_path%'
+            - '%core.php_ext%'
+
+    snailpaste.phpbbexternalintegration.controller.acp:
+        class: snailpaste\phpbbexternalintegration\controller\acp_controller
+        arguments:
+            - '@config'
+            - '@dbal.conn'
+            - '@service_container'
+            - '@language'
+            - '@log'
+            - '@snailpaste.phpbbexternalintegration.operator'
+            - '@request'
+            - '@template'
+            - '@user'
+
+    snailpaste.phpbbexternalintegration.listener:
+        class: snailpaste\phpbbexternalintegration\event\main_listener
+        arguments:
+            - '@config'
+            - '@language'
+            - '@controller.helper'
+            - '@template'
+            - '%core.php_ext%'
+        tags:
+            - { name: event.listener }
+
+    snailpaste.phpbbexternalintegration.entity:
+        class: snailpaste\phpbbexternalintegration\entity\api_key
+        shared: false # service MUST not be shared for this to work!
+        arguments:
+            - '@dbal.conn'
+            - '@config'
+            - '@dispatcher'
+            - '%snailpaste.phpbbexternalintegration.tables.api_keys%'
+            - '@text_formatter.utils'
+
+    snailpaste.phpbbexternalintegration.operator:
+        class: snailpaste\phpbbexternalintegration\operators\api_key
+        arguments:
+            - '@cache.driver'
+            - '@service_container'
+            - '@dbal.conn'
+            - '@ext.manager'
+            - '@user'
+            - '%snailpaste.phpbbexternalintegration.tables.api_keys%'

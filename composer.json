@@ -1,0 +1,27 @@
+{
+    "name": "snailpaste/phpbbexternalintegration",
+    "type": "phpbb-extension",
+    "description": "Moves creating and managing phpBB accounts to an API for integration with other sites",
+    "homepage": "https://github.com/SnailPaste/phpbb-external-integration",
+    "version": "0.0.1-dev",
+    "time": "2021-10-25",
+    "license": "GPL-2.0-only",
+    "authors": [
+        {
+            "name": "Scott Wichser",
+            "email": "blast007@users.sourceforge.net",
+            "homepage": "https://github.com/blast007",
+            "role": "Project Administrator"
+        }
+    ],
+    "require": {
+        "php": ">=7.3",
+        "composer/installers": "~1.0"
+    },
+    "extra": {
+        "display-name": "phpBB External Integration",
+        "soft-require": {
+            "phpbb/phpbb": ">=3.3.0,<3.4.0@dev"
+        }
+    }
+}
