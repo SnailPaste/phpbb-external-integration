@@ -174,7 +174,7 @@ class users_controller
 	/**
 	 * Controller handler for route /api/users/register
 	 *
-	 * @return \Symfony\Component\HttpFoundation\Response A Symfony Response object
+	 * @return \Symfony\Component\HttpFoundation\JsonResponse A Symfony Response object
 	 */
 	public function register()
 	{
@@ -303,7 +303,7 @@ class users_controller
 	/**
 	 * Controller handler for route /api/users/login
 	 *
-	 * @return \Symfony\Component\HttpFoundation\Response A Symfony Response object
+	 * @return \Symfony\Component\HttpFoundation\JsonResponse A Symfony Response object
 	 */
 	public function login()
 	{
