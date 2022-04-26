@@ -38,6 +38,7 @@ services:
             - '@language'
             - '@controller.helper'
             - '@template'
+            - '@snailpaste.phpbbexternalintegration.operator'
             - '%core.php_ext%'
         tags:
             - { name: event.listener }
