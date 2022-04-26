@@ -72,7 +72,7 @@ class users_controller
 	 * @param \phpbb\template\template	$template	Template object
 	 * @param \phpbb\language\language	$language	Language object
 	 * @param \phpbb\db\driver\driver_interface $db Database object
-	 * @param \snailpaste\phpbbexternalintegration\operators\page $api_key_operator	API keys operator object
+	 * @param \snailpaste\phpbbexternalintegration\operators\api_key $api_key_operator	API keys operator object
 	 * @param \phpbb\request\request	$request	Request object
 	 * @param \phpbb\user			   $user	   User object
 	 */
