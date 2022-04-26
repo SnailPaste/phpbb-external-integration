@@ -318,8 +318,7 @@ class users_controller
 		// Fetch the registration data
 		$login_info = [
 			'username' => $this->request->variable('username', '', true, \phpbb\request\request_interface::POST),
-			'password' => $this->request->variable('password', '', true, \phpbb\request\request_interface::POST),
-			//'remember_me' => $this->request->variable('password_confirm', false, false, \phpbb\request\request_interface::POST)
+			'password' => $this->request->variable('password', '', true, \phpbb\request\request_interface::POST)
 		];
 
 		// Normalize the username
