@@ -73,6 +73,26 @@ class acp_controller
 		$this->user		= $user;
 	}
 
+	public function populate_keys()
+	{
+		$apikeys = $this->api_key_operator->get_api_keys();
+
+		foreach($apikeys as $apikey)
+		{
+			// Set output block vars for display in the template
+			$this->template->assign_block_vars('apikeys', array(
+				'KEY_NAME'	=> $apikey->get_name(),
+
+				'ALLOWED_IPS'	=> $apikey->get_allowed_ips(),
+				'PERM_REGISTER'	=> $apikey->register_allowed(),
+				'PERM_LOGIN'	=> $apikey->login_allowed(),
+				'PERM_MANAGE'	=> $apikey->manage_allowed(),
+
+				'U_DELETE'		=> "{$this->u_action}&amp;action=delete&amp;api_key_id=" . $apikey->get_id(),
+			));
+		}
+	}
+
 	/**
 	 * Display the options a user can configure for this extension.
 	 *
@@ -80,146 +100,124 @@ class acp_controller
 	 */
 	public function display_options()
 	{
-		// Add our common language file
-		$this->language->add_lang('common', 'snailpaste/phpbbexternalintegration');
+		// Create a form key for preventing CSRF attacks
+		add_form_key('snailpaste_phpbbexternalintegration_acp');
+
+		$this->populate_keys();
+
+		// Set output variables for display in the template
+		$this->template->assign_vars([
+			'U_ACTION'		=> $this->u_action,
+		]);
+	}
+
+
+	public function add_key()
+	{
+		// Keep track of errors
+		$errors = [];
 
 		// Create a form key for preventing CSRF attacks
 		add_form_key('snailpaste_phpbbexternalintegration_acp');
 
-		// Create an array to collect errors that will be output to the user
-		$errors = [];
+		// Must be a valid form submission
+		if (!$this->request->is_set_post('submit') || !check_form_key('snailpaste_phpbbexternalintegration_acp')) {
+			$errors[] = $this->language->lang('FORM_INVALID');
+		}
+		else
+		{
+			// Collect form data
+			$data = [
+				'api_key_name'					=> $this->request->variable('snailpaste_phpbbexternalintegration_key_name', '', true),
+				// TODO: Look into how best to generate this
+				'api_key_value'				 => bin2hex(random_bytes(64)),
+				'api_key_allowed_ips'			=> $this->request->variable('snailpaste_phpbbexternalintegration_allowed_ips', ''),
+				'api_key_perm_register'			=> $this->request->variable('snailpaste_phpbbexternalintegration_perm_register', ''),
+				'api_key_perm_login'			=> $this->request->variable('snailpaste_phpbbexternalintegration_perm_login', ''),
+				'api_key_perm_manage'			=> $this->request->variable('snailpaste_phpbbexternalintegration_perm_manage', ''),
+			];
 
-		if ($this->u_action == 'delete') {
-			if (confirm_box(true))
+			// Map the data to the setters
+			$map_fields = [
+				'set_name' => $data['api_key_name'],
+				'set_key' => $data['api_key_value'],
+				'set_allowed_ips' => $data['api_key_allowed_ips'],
+				'set_perm_register' => $data['api_key_perm_register'],
+				'set_perm_login' => $data['api_key_perm_login'],
+				'set_perm_manage' => $data['api_key_perm_manage'],
+			];
+
+			// Create an entity
+			/* @var $entity \snailpaste\phpbbexternalintegration\entity\api_key */
+			$entity = $this->container->get('snailpaste.phpbbexternalintegration.entity');
+
+			foreach($map_fields as $entity_function => $key_data)
 			{
-				// TODO: Verify we got a valid ID and got an API key?
-				// TODO: Should we be using check_form_key here too? 
-				$api_key_id = $this->request->variable('api_key_id', 0);
-				$entity = $this->container->get('snailpaste.phpbbexternalintegration.entity')->load($api_key_id);
-
 				try
 				{
-					$this->api_key_operator->delete_api_key($api_key_id);
+					$entity->$entity_function($key_data);
 				}
-				catch (\snailpaste\phpbbexternalintegration\exception\base $e)
+				catch(\snailpaste\phpbbexternalintegration\exception\base $e)
 				{
-					// TODO: Should we generate a JSON response for our errors?
-					trigger_error($this->lang->lang('ACP_PHPBBEXTERNALINTEGRATION_KEY_DELETE_ERRORED') . adm_back_link($this->u_action), E_USER_WARNING);
-				}
-
-				// Log the action
-				$this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'LOG_ACP_PHPBBEXTERNALINTEGRATION_KEY_DELETED', time(), array($entity->get_name()));
-				
-				// If AJAX was used, show user a result message
-				if ($this->request->is_ajax())
-				{
-					$json_response = new \phpbb\json_response;
-					$json_response->send(array(
-						'MESSAGE_TITLE' => $this->language->lang('INFORMATION'),
-						'MESSAGE_TEXT'  => $this->language->lang('ACP_PHPBBEXTERNALINTEGRATION_KEY_DELETE_SUCCESS'),
-						'REFRESH_DATA'  => array(
-							'time'  => 3
-						)
-					));
+					$errors[] = $e->get_message($this->language);
 				}
 			}
-			else
+
+			unset($map_fields);
+
+			// If no errors, process the form data
+			if (empty($errors))
 			{
-				// TODO: Are we using JSON or not??
-				confirm_box(false, $language->lang('ACP_PHPBBEXTERNALINTEGRATION_KEY_CONFIRM_DELETE'), build_hidden_fields([
-					'api_key_id' => $api_key_id,
-					'mode' => $mode,
-					'action' => $action,
-				]));
+				$entity = $this->api_key_operator->add_api_key($entity);
+
+				$this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'LOG_ACP_PHPBBEXTERNALINTEGRATION_KEY_ADDED', time(), array($entity->get_name()));
+
+				trigger_error($this->language->lang('ACP_PHPBBEXTERNALINTEGRATION_KEY_ADD_SUCCESS') . '<br><input type="text" value="' . $data['api_key_value'] . '">' . adm_back_link($this->u_action));
 			}
 		}
-		// Adding or viewing
-		else {
-			// Is the admin trying to add a new API key?
-			if ($this->request->is_set_post('submit'))
-			{
-				// Test if the submitted form is valid
-				if (!check_form_key('snailpaste_phpbbexternalintegration_acp'))
-				{
-					$errors[] = $this->language->lang('FORM_INVALID');
-				}
 
-				// Collect form data
-				$data = [
-					'api_key_name'					=> $this->request->variable('snailpaste_phpbbexternalintegration_key_name', '', true),
-					// TODO: Look into how best to generate this
-					'api_key_value'				 => bin2hex(random_bytes(64)),
-					'api_key_allowed_ips'			=> $this->request->variable('snailpaste_phpbbexternalintegration_allowed_ips', ''),
-					'api_key_perm_register'			=> $this->request->variable('snailpaste_phpbbexternalintegration_perm_register', ''),
-					'api_key_perm_login'			=> $this->request->variable('snailpaste_phpbbexternalintegration_perm_login', ''),
-                    'api_key_perm_manage'			=> $this->request->variable('snailpaste_phpbbexternalintegration_perm_manage', ''),
-				];
+		$this->populate_keys();
 
-				// Map the data to the setters
-				$map_fields = [
-					'set_name' => $data['api_key_name'],
-					'set_key' => $data['api_key_value'],
-					'set_allowed_ips' => $data['api_key_allowed_ips'],
-					'set_perm_register' => $data['api_key_perm_register'],
-					'set_perm_login' => $data['api_key_perm_login'],
-					'set_perm_manage' => $data['api_key_perm_manage'],
-				];
+		$s_errors = !empty($errors);
 
-				// Create an entity
-				/* @var $entity \snailpaste\phpbbexternalintegration\entity\api_key */
-				$entity = $this->container->get('snailpaste.phpbbexternalintegration.entity');
+		// Set output variables for display in the template
+		$this->template->assign_vars([
+			'S_ERROR'		=> $s_errors,
+			'ERROR_MSG'		=> $s_errors ? implode('<br />', $errors) : '',
+			'U_ACTION'		=> $this->u_action,
+		]);
+	}
 
-				foreach($map_fields as $entity_function => $key_data)
-				{
-					try
-					{
-						$entity->$entity_function($key_data);
-					}
-					catch(\snailpaste\phpbbexternalintegration\exception\base $e)
-					{
-						$errors[] = $e->get_message($this->language);
-					}
-				}
+	public function delete_key($api_key_id)
+	{
+		// TODO: Verify we got a valid ID and got an API key?
+		// TODO: Should we be using check_form_key here too?
+		$entity = $this->container->get('snailpaste.phpbbexternalintegration.entity')->load($api_key_id);
 
-				unset($map_fields);
+		try
+		{
+			$this->api_key_operator->delete_api_key($api_key_id);
+		}
+		catch (\snailpaste\phpbbexternalintegration\exception\base $e)
+		{
+			// TODO: Should we generate a JSON response for our errors?
+			trigger_error($this->lang->lang('ACP_PHPBBEXTERNALINTEGRATION_KEY_DELETE_ERRORED') . adm_back_link($this->u_action), E_USER_WARNING);
+		}
 
-				// If no errors, process the form data
-				if (empty($errors))
-				{
-					$entity = $this->api_key_operator->add_api_key($entity);
+		// Log the action
+		$this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'LOG_ACP_PHPBBEXTERNALINTEGRATION_KEY_DELETED', time(), array($entity->get_name()));
 
-					$this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'LOG_ACP_PHPBBEXTERNALINTEGRATION_KEY_ADDED', time(), array($entity->get_name()));
-
-					trigger_error($this->language->lang('ACP_PHPBBEXTERNALINTEGRATION_KEY_ADD_SUCCESS') . adm_back_link($this->u_action));
-				}
-			}
-
-			$apikeys = $this->api_key_operator->get_api_keys();
-
-			foreach($apikeys as $apikey)
-			{
-				// Set output block vars for display in the template
-				$this->template->assign_block_vars('apikeys', array(
-					'KEY_NAME'	=> $apikey->get_name(),
-
-					'ALLOWED_IPS'	=> $apikey->get_allowed_ips(),
-					'PERM_REGISTER'	=> $apikey->register_allowed(),
-					'PERM_LOGIN'	=> $apikey->login_allowed(),
-                    'PERM_MANAGE'	=> $apikey->manage_allowed(),
-
-					'U_DELETE'		=> "{$this->u_action}&amp;action=delete&amp;api_key_id=" . $apikey->get_id(),
-				));
-			}
-
-			$s_errors = !empty($errors);
-
-			// Set output variables for display in the template
-			$this->template->assign_vars([
-				'S_ERROR'		=> $s_errors,
-				'ERROR_MSG'		=> $s_errors ? implode('<br />', $errors) : '',
-
-				'U_ACTION'		=> $this->u_action,
-			]);
+		// If AJAX was used, show user a result message
+		if ($this->request->is_ajax())
+		{
+			$json_response = new \phpbb\json_response;
+			$json_response->send(array(
+				'MESSAGE_TITLE' => $this->language->lang('INFORMATION'),
+				'MESSAGE_TEXT'  => $this->language->lang('ACP_PHPBBEXTERNALINTEGRATION_KEY_DELETE_SUCCESS'),
+				'REFRESH_DATA'  => array(
+					'time'  => 3
+				)
+			));
 		}
 	}
 

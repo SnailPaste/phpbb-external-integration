@@ -9,7 +9,6 @@
 	</div>
 {% endif %}
 
-
 {% if loops.apikeys|length %}
 	<fieldset>
 		<legend>{{ lang('ACP_PHPBBEXTERNALINTEGRATION_API_KEYS') }}</legend>
@@ -32,9 +31,9 @@
 							{{ apikey.ALLOWED_IPS }}
 						</td>
 						<td style="text-align: center;" class="row2"><dfn style="display: none;">{{ lang('ACP_PHPBBEXTERNALINTEGRATION_PERMISSIONS') }}</dfn>
-							<input type="checkbox" readonly="readonly"{% if apikey.PERM_REGISTER %} checked="checked"{% endif %} /> {{ lang('ACP_PHPBBEXTERNALINTEGRATION_PERM_REGISTER') }}
-							<input type="checkbox" readonly="readonly"{% if apikey.PERM_LOGIN %} checked="checked"{% endif %} /> {{ lang('ACP_PHPBBEXTERNALINTEGRATION_PERM_LOGIN') }}
-							<input type="checkbox" readonly="readonly"{% if apikey.PERM_MANAGE %} checked="checked"{% endif %} /> {{ lang('ACP_PHPBBEXTERNALINTEGRATION_PERM_MANAGE') }}
+							<input type="checkbox" disabled="disabled"{% if apikey.PERM_REGISTER %} checked="checked"{% endif %} /> {{ lang('ACP_PHPBBEXTERNALINTEGRATION_PERM_REGISTER') }}
+							<input type="checkbox" disabled="disabled"{% if apikey.PERM_LOGIN %} checked="checked"{% endif %} /> {{ lang('ACP_PHPBBEXTERNALINTEGRATION_PERM_LOGIN') }}
+							<input type="checkbox" disabled="disabled"{% if apikey.PERM_MANAGE %} checked="checked"{% endif %} /> {{ lang('ACP_PHPBBEXTERNALINTEGRATION_PERM_MANAGE') }}
 						</td>
 						<td style="text-align: center;" class="row1"><dfn style="display: none;">{{ lang('ACP_PHPBBEXTERNALINTEGRATION_ACTIONS') }}</dfn>
 							<a href="{{ apikey.U_DELETE }}" data-ajax="row_delete">{{ ICON_DELETE }}</a>
